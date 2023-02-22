@@ -14,7 +14,6 @@ export type CalendarListItemProps = CalendarProps & {
   horizontal?: boolean;
   theme?: Theme;
   scrollToMonth?: (date: XDate) => void;
-  visible?: boolean;
 };
 
 const CalendarListItem = React.memo((props: CalendarListItemProps) => {  
@@ -28,8 +27,7 @@ const CalendarListItem = React.memo((props: CalendarListItemProps) => {
     style: propsStyle,
     headerStyle,
     onPressArrowLeft,
-    onPressArrowRight,
-    visible
+    onPressArrowRight
   } = props;
 
   const style = useRef(styleConstructor(theme));
@@ -80,12 +78,6 @@ const CalendarListItem = React.memo((props: CalendarListItemProps) => {
       }
     }
   }, [onPressArrowRight, scrollToMonth]);
-
-  if (!visible) {
-    return (
-      <Text style={textStyle}>{dateString}</Text>
-    );
-  }
 
   return (
     <Calendar

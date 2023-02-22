@@ -4,7 +4,6 @@ import XDate from 'xdate';
 
 import React, {forwardRef, useImperativeHandle, useRef, useEffect, useState, useCallback, useMemo} from 'react';
 import {FlatList, View, ViewStyle, FlatListProps} from 'react-native';
-import {BottomSheetFlatList} from '@gorhom/bottom-sheet';
 
 import {extractHeaderProps, extractCalendarProps} from '../componentUpdater';
 import {xdateToData, parseDate, toMarkingFormat} from '../interface';
@@ -101,9 +100,14 @@ const CalendarList = (props: CalendarListProps & ContextProp, ref: any) => {
     /** FlatList props */
     onEndReachedThreshold,
     onEndReached,
-    useBottomSheetComponents
+    externalListComponent,
+    maxToRenderPerBatch,
+    updateCellsBatchingPeriod,
+    initialNumToRender,
+    windowSize
   } = props;
 
+  const List = externalListComponent ? externalListComponent : FlatList;
   const calendarProps = extractCalendarProps(props);
   const headerProps = extractHeaderProps(props);
   const calendarSize = horizontal ? calendarWidth : calendarHeight;
@@ -112,7 +116,7 @@ const CalendarList = (props: CalendarListProps & ContextProp, ref: any) => {
 
   const style = useRef(styleConstructor(theme));
   const list = useRef();
-  const range = useRef(horizontal ? 1 : 3);
+  const range = useRef(initialNumToRender || (horizontal ? 1 : 3));
   const initialDate = useRef(parseDate(current) || new XDate());
   const visibleMonth = useRef(currentMonth);
 
@@ -224,19 +228,6 @@ const CalendarList = (props: CalendarListProps & ContextProp, ref: any) => {
     };
   }, []);
 
-  const isDateInRange = useCallback(
-    date => {
-      for (let i = -range.current; i <= range.current; i++) {
-        const newMonth = currentMonth?.clone().addMonths(i, true);
-        if (sameMonth(date, newMonth)) {
-          return true;
-        }
-      }
-      return false;
-    },
-    [currentMonth]
-  );
-
   const renderItem = useCallback(
     ({item}: {item: XDate}) => {
       const dateString = toMarkingFormat(item);
@@ -254,11 +245,10 @@ const CalendarList = (props: CalendarListProps & ContextProp, ref: any) => {
           calendarWidth={calendarWidth}
           calendarHeight={calendarHeight}
           scrollToMonth={scrollToMonth}
-          visible={isDateInRange(item)}
         />
       );
     },
-    [horizontal, calendarStyle, calendarWidth, testID, getMarkedDatesForItem, isDateInRange, calendarProps]
+    [horizontal, calendarStyle, calendarWidth, testID, getMarkedDatesForItem, calendarProps]
   );
 
   const renderStaticHeader = () => {
@@ -297,40 +287,9 @@ const CalendarList = (props: CalendarListProps & ContextProp, ref: any) => {
       onViewableItemsChanged
     }
   ]);
-  let component = (
-    <FlatList
-      // @ts-expect-error
-      ref={list}
-      style={listStyle}
-      showsVerticalScrollIndicator={showScrollIndicator}
-      showsHorizontalScrollIndicator={showScrollIndicator}
-      data={items}
-      renderItem={renderItem}
-      getItemLayout={getItemLayout}
-      initialNumToRender={range.current}
-      initialScrollIndex={initialDateIndex}
-      viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
-      testID={`${testID}.list`}
-      onLayout={onLayout}
-      removeClippedSubviews={removeClippedSubviews}
-      pagingEnabled={pagingEnabled}
-      scrollEnabled={scrollEnabled}
-      scrollsToTop={scrollsToTop}
-      horizontal={horizontal}
-      keyboardShouldPersistTaps={keyboardShouldPersistTaps}
-      keyExtractor={keyExtractor}
-      onEndReachedThreshold={onEndReachedThreshold}
-      onEndReached={onEndReached}
-      nestedScrollEnabled={nestedScrollEnabled}
-      onMomentumScrollBegin={onMomentumScrollBegin}
-      onMomentumScrollEnd={onMomentumScrollEnd}
-      onScrollBeginDrag={onScrollBeginDrag}
-      onScrollEndDrag={onScrollEndDrag}
-    />
-  );
-  if (useBottomSheetComponents) {
-    component = (
-      <BottomSheetFlatList
+  return (
+    <View style={{...style.current.flatListContainer, flex: 1}} testID={testID}>
+      <List
         // @ts-expect-error
         ref={list}
         style={listStyle}
@@ -339,6 +298,9 @@ const CalendarList = (props: CalendarListProps & ContextProp, ref: any) => {
         data={items}
         renderItem={renderItem}
         getItemLayout={getItemLayout}
+        maxToRenderPerBatch={maxToRenderPerBatch}
+        updateCellsBatchingPeriod={updateCellsBatchingPeriod}
+        windowSize={windowSize}
         initialNumToRender={range.current}
         initialScrollIndex={initialDateIndex}
         viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
@@ -359,11 +321,6 @@ const CalendarList = (props: CalendarListProps & ContextProp, ref: any) => {
         onScrollBeginDrag={onScrollBeginDrag}
         onScrollEndDrag={onScrollEndDrag}
       />
-    );
-  }
-  return (
-    <View style={{...style.current.flatListContainer, flex: 1}} testID={testID}>
-      {component}
       {renderStaticHeader()}
     </View>
   );
