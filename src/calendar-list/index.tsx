@@ -39,6 +39,7 @@ export interface CalendarListProps extends CalendarProps, Omit<FlatListProps<any
   showScrollIndicator?: boolean;
   /** Whether to animate the auto month scroll */
   animateScroll?: boolean;
+  externalListComponent?: React.ComponentType<any>;
 }
 
 export interface CalendarListImperativeMethods {
@@ -185,7 +186,6 @@ const CalendarList = (props: CalendarListProps & ContextProp, ref: any) => {
     }
 
     if (scrollAmount !== 0) {
-      // @ts-expect-error
       list?.current?.scrollToOffset({offset: scrollAmount, animated});
     }
   };
@@ -196,7 +196,6 @@ const CalendarList = (props: CalendarListProps & ContextProp, ref: any) => {
     const scrollAmount = calendarSize * (shouldUseAndroidRTLFix ? pastScrollRange - diffMonths : pastScrollRange + diffMonths);
 
     if (scrollAmount !== 0) {
-      // @ts-expect-error
       list?.current?.scrollToOffset({offset: scrollAmount, animated: animateScroll});
     }
   }, [calendarSize, shouldUseAndroidRTLFix, pastScrollRange, animateScroll]);
@@ -243,7 +242,6 @@ const CalendarList = (props: CalendarListProps & ContextProp, ref: any) => {
           markedDates={getMarkedDatesForItem(item)}
           item={item}
           style={calendarStyle}
-          // @ts-expect-error - type mismatch - ScrollView's 'horizontal' is nullable
           horizontal={horizontal}
           calendarWidth={calendarWidth}
           calendarHeight={calendarHeight}
@@ -300,9 +298,8 @@ const CalendarList = (props: CalendarListProps & ContextProp, ref: any) => {
   return (
     <View style={{...style.current.flatListContainer, flex: 1}} testID={testID}>
       <List
-        // @ts-expect-error
         ref={list}
-        windowSize={shouldUseAndroidRTLFix ? pastScrollRange + futureScrollRange + 1 : undefined}
+        windowSize={windowSize || (shouldUseAndroidRTLFix ? pastScrollRange + futureScrollRange + 1 : undefined)}
         style={listStyle}
         showsVerticalScrollIndicator={showScrollIndicator}
         showsHorizontalScrollIndicator={showScrollIndicator}
@@ -311,7 +308,6 @@ const CalendarList = (props: CalendarListProps & ContextProp, ref: any) => {
         getItemLayout={getItemLayout}
         maxToRenderPerBatch={maxToRenderPerBatch}
         updateCellsBatchingPeriod={updateCellsBatchingPeriod}
-        windowSize={windowSize}
         initialNumToRender={range.current}
         initialScrollIndex={initialDateIndex}
         viewabilityConfigCallbackPairs={viewabilityConfigCallbackPairs.current}
